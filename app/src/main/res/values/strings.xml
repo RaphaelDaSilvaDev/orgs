@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Orgs</string>
+    <string name="title_activity_product_form">ProductFormActivity</string>
+    <string name="title_activity_dialog_add_image_form">DialogAddImageForm</string>
+</resources>
