@@ -2,10 +2,19 @@ package com.raphaelsilva.orgs.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.raphaelsilva.orgs.database.AppDatabase
 import com.raphaelsilva.orgs.databinding.ActivityProductsListBinding
+import com.raphaelsilva.orgs.exeptions.CoroutineException
 import com.raphaelsilva.orgs.ui.recyclerview.adapter.ProductListAdapter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ProductListActivity : AppCompatActivity() {
     private val adapter = ProductListAdapter(context = this)
@@ -14,20 +23,21 @@ class ProductListActivity : AppCompatActivity() {
         ActivityProductsListBinding.inflate(layoutInflater)
     }
 
+    private val daoProducts by lazy {
+        val db = AppDatabase.instance(this)
+        db.productDao()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         settingsRecyclerView()
         settingsFab()
-
-
-    }
-
-    override fun onResume() {
-        super.onResume()
-        val db = AppDatabase.instance(this)
-        val daoProducts = db.productDao()
-        adapter.update(daoProducts.getAll())
+        lifecycleScope.launch(CoroutineException.handler(this)) {
+            daoProducts.getAll().collect{product ->
+                adapter.update(product)
+            }
+        }
     }
 
     private fun settingsFab() {

@@ -7,12 +7,15 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.raphaelsilva.orgs.database.converter.Converters
 import com.raphaelsilva.orgs.database.dao.ProductDao
+import com.raphaelsilva.orgs.database.dao.UserDao
 import com.raphaelsilva.orgs.model.Product
+import com.raphaelsilva.orgs.model.User
 
-@Database(entities = [Product::class], version = 1, exportSchema = false)
+@Database(entities = [Product::class, User::class], version = 2, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile
@@ -20,7 +23,6 @@ abstract class AppDatabase : RoomDatabase() {
         fun instance(context: Context): AppDatabase {
             if (::db.isInitialized) return db
             return Room.databaseBuilder(context, AppDatabase::class.java, "orgs.db")
-                .allowMainThreadQueries()
                 .build().also {
                     db = it
                 }

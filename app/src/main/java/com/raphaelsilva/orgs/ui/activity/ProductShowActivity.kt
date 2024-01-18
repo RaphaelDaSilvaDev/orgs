@@ -5,15 +5,19 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.raphaelsilva.orgs.R
 import com.raphaelsilva.orgs.database.AppDatabase
 import com.raphaelsilva.orgs.databinding.ActivityShowProductBinding
+import com.raphaelsilva.orgs.exeptions.CoroutineException
 import com.raphaelsilva.orgs.extensions.convertToBRLCurrency
 import com.raphaelsilva.orgs.extensions.loadImage
 import com.raphaelsilva.orgs.model.Product
+import kotlinx.coroutines.launch
 
 class ProductShowActivity : AppCompatActivity() {
     private lateinit var product: Product
+
     private val binding by lazy {
         ActivityShowProductBinding.inflate(layoutInflater)
     }
@@ -25,11 +29,19 @@ class ProductShowActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-    }
 
-    override fun onResume() {
-        super.onResume()
-        loadProduct()
+        val productUID = intent.getIntExtra(PRODUCT_UID_KEY, 0)
+
+        lifecycleScope.launch(CoroutineException.handler(this)) {
+            daoProduct.getProductById(productUID).collect { loadedProduct ->
+                if (loadedProduct != null) {
+                    product = loadedProduct
+                    bindingFields(loadedProduct)
+                } else {
+                    finish()
+                }
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -49,26 +61,15 @@ class ProductShowActivity : AppCompatActivity() {
                 }
 
                 R.id.show_item_menu_remove -> {
-                    daoProduct.delete(product)
-                    finish()
+                    lifecycleScope.launch(CoroutineException.handler(this)) {
+                        daoProduct.delete(product)
+                        finish()
+                    }
                 }
             }
         }
         return super.onOptionsItemSelected(item)
     }
-
-    private fun loadProduct() {
-        val productUID = intent.getIntExtra(PRODUCT_UID_KEY, 0)
-        if (productUID > 0) {
-            daoProduct.getProductById(productUID)?.let { loadedProduct ->
-                product = loadedProduct
-                bindingFields(loadedProduct)
-            }
-        } else {
-            finish()
-        }
-    }
-
 
     private fun bindingFields(product: Product) {
         with(binding) {

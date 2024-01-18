@@ -2,12 +2,15 @@ package com.raphaelsilva.orgs.ui.activity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.raphaelsilva.orgs.R
 import com.raphaelsilva.orgs.database.AppDatabase
 import com.raphaelsilva.orgs.databinding.ActivityProductFormBinding
+import com.raphaelsilva.orgs.exeptions.CoroutineException
 import com.raphaelsilva.orgs.extensions.loadImage
 import com.raphaelsilva.orgs.model.Product
 import com.raphaelsilva.orgs.ui.dialog.ImageFormDialog
+import kotlinx.coroutines.launch
 import java.math.BigDecimal
 
 class ProductFormActivity : AppCompatActivity(R.layout.activity_product_form) {
@@ -27,38 +30,30 @@ class ProductFormActivity : AppCompatActivity(R.layout.activity_product_form) {
         setContentView(binding.root)
         title = "Cadastrar Produto"
 
-        onSave()
+        val productUID = intent.getIntExtra(PRODUCT_UID_KEY, 0)
 
-        val imageInput = binding.imageInput
-        imageInput.setOnClickListener {
-            ImageFormDialog(this).show(url) { image ->
-                imageInput.loadImage(image)
-                url = image
+        lifecycleScope.launch(CoroutineException.handler(this)) {
+            daoProduct.getProductById(productUID).collect { product ->
+                if (product != null) {
+                    productUid = product.uid
+                    title = "Editar Produto"
+                    bindingProduct(product)
+                }
             }
         }
-    }
 
-    override fun onResume() {
-        super.onResume()
-        val productUID = intent.getIntExtra(PRODUCT_UID_KEY, 0)
-        getProduct(productUID)
+        onSave()
+        bindingImage()
     }
-
-    private fun getProduct(productUID: Int) {
-        if (productUID > 0) {
-            title = "Editar Produto"
-            productUid = productUID
-            daoProduct.getProductById(productUID)?.let { bindingProduct(it) }
-        }
-    }
-
 
     private fun onSave() {
         val formButtonAdd = binding.formButtonAdd
         formButtonAdd.setOnClickListener {
             val newProduct = product()
-            daoProduct.save(newProduct)
-            finish()
+            lifecycleScope.launch(CoroutineException.handler(this)) {
+                daoProduct.save(newProduct)
+                finish()
+            }
         }
 
     }
@@ -70,6 +65,16 @@ class ProductFormActivity : AppCompatActivity(R.layout.activity_product_form) {
         binding.imageInput.loadImage(product.image)
         binding.formButtonAdd.text = "Atualizar Produto"
         url = product.image
+    }
+
+    private fun bindingImage() {
+        val imageInput = binding.imageInput
+        imageInput.setOnClickListener {
+            ImageFormDialog(this).show(url) { image ->
+                imageInput.loadImage(image)
+                url = image
+            }
+        }
     }
 
     private fun product(): Product {
@@ -92,6 +97,4 @@ class ProductFormActivity : AppCompatActivity(R.layout.activity_product_form) {
             image = imageValue
         )
     }
-
-
 }
