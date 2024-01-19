@@ -11,7 +11,7 @@ import com.raphaelsilva.orgs.database.dao.UserDao
 import com.raphaelsilva.orgs.model.Product
 import com.raphaelsilva.orgs.model.User
 
-@Database(entities = [Product::class, User::class], version = 2, exportSchema = true)
+@Database(entities = [Product::class, User::class], version = 3, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao
@@ -23,7 +23,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun instance(context: Context): AppDatabase {
             if (::db.isInitialized) return db
             return Room.databaseBuilder(context, AppDatabase::class.java, "orgs.db")
-                .build().also {
+                .addMigrations(MIGRATION_2_3).build().also {
                     db = it
                 }
         }

@@ -1,19 +1,18 @@
 package com.raphaelsilva.orgs.ui.activity
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.raphaelsilva.orgs.R
 import com.raphaelsilva.orgs.database.AppDatabase
 import com.raphaelsilva.orgs.databinding.ActivityProductFormBinding
 import com.raphaelsilva.orgs.exeptions.CoroutineException
 import com.raphaelsilva.orgs.extensions.loadImage
 import com.raphaelsilva.orgs.model.Product
 import com.raphaelsilva.orgs.ui.dialog.ImageFormDialog
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 
-class ProductFormActivity : AppCompatActivity(R.layout.activity_product_form) {
+class ProductFormActivity : UserBaseActivity() {
     private val binding by lazy {
         ActivityProductFormBinding.inflate(layoutInflater)
     }
@@ -29,6 +28,10 @@ class ProductFormActivity : AppCompatActivity(R.layout.activity_product_form) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         title = "Cadastrar Produto"
+
+        lifecycleScope.launch {
+            user.filterNotNull()
+        }
 
         val productUID = intent.getIntExtra(PRODUCT_UID_KEY, 0)
 
@@ -49,10 +52,12 @@ class ProductFormActivity : AppCompatActivity(R.layout.activity_product_form) {
     private fun onSave() {
         val formButtonAdd = binding.formButtonAdd
         formButtonAdd.setOnClickListener {
-            val newProduct = product()
             lifecycleScope.launch(CoroutineException.handler(this)) {
-                daoProduct.save(newProduct)
-                finish()
+                user.value?.let { user ->
+                    val newProduct = product(user.id)
+                    daoProduct.save(newProduct)
+                    finish()
+                }
             }
         }
 
@@ -77,7 +82,7 @@ class ProductFormActivity : AppCompatActivity(R.layout.activity_product_form) {
         }
     }
 
-    private fun product(): Product {
+    private fun product(userId: String): Product {
         val titleValue = binding.titleInput.editText?.text.toString()
         val descriptionValue = binding.descriptionInput.editText?.text.toString()
         val priceValue = binding.priceInput.editText?.text.toString()
@@ -94,7 +99,8 @@ class ProductFormActivity : AppCompatActivity(R.layout.activity_product_form) {
             title = titleValue,
             description = descriptionValue,
             price = price,
-            image = imageValue
+            image = imageValue,
+            user_id = userId
         )
     }
 }

@@ -13,5 +13,6 @@ data class Product(
     val title: String,
     val description: String,
     val price: BigDecimal,
-    val image: String? = null
+    val image: String? = null,
+    val user_id: String? = null
 ): Parcelable
